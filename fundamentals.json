@@ -1,0 +1,4 @@
+{
+  "_說明": "法說會與產品比重。每檔一筆，key 為股票代號。conference.date 用 YYYY-MM-DD；product_mix 的 pct 為百分比。",
+  "items": {}
+}

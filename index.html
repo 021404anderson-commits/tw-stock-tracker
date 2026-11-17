@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>台股追蹤</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1c1b19;--mute:#6f6c66;--line:#e4e1d9;--up:#c8322b;--down:#1d8a4e;--flat:#6f6c66;--accent:#2b4a7a}
+@media(prefers-color-scheme:dark){:root{--bg:#141412;--card:#1e1d1b;--ink:#eceae4;--mute:#9a968d;--line:#32302c;--up:#ff6b61;--down:#3fc67c;--flat:#9a968d;--accent:#8fb0e6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0}
+.sub{color:var(--mute);font-size:13px;margin:2px 0 16px}
+.warn{background:color-mix(in srgb,var(--up) 12%,var(--card));border:1px solid var(--up);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+.idx{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.idx .n{color:var(--mute);font-size:13px}
+.idx .v{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.chg{font-variant-numeric:tabular-nums;font-size:13px}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}
+h2{font-size:13px;color:var(--mute);font-weight:600;margin:20px 0 8px;letter-spacing:.04em}
+.stock{margin-bottom:8px;padding:0;overflow:hidden}
+.stock summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px;align-items:center}
+.stock summary::-webkit-details-marker{display:none}
+.nm{font-weight:600}.cd{color:var(--mute);font-size:12px;margin-left:6px;font-variant-numeric:tabular-nums}
+.px{font-size:18px;font-weight:650;text-align:right;font-variant-numeric:tabular-nums}
+.pos{grid-column:1;color:var(--mute);font-size:12.5px}
+.stock .chg{text-align:right}
+.spark{display:block;width:100%;height:34px;margin-top:6px}
+.body{border-top:1px solid var(--line);padding:12px 14px;font-size:13.5px}
+.body dt{color:var(--mute);font-size:12px;margin-top:10px}.body dt:first-child{margin-top:0}
+.body dd{margin:2px 0 0}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0;background:var(--line)}
+.bar i{display:block}
+.leg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px}
+.leg b{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.todo{color:var(--mute);font-style:italic}
+.cal{font-size:13.5px}
+.cal div{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.cal div:last-child{border:0}
+.cal time{font-variant-numeric:tabular-nums;color:var(--accent);min-width:86px}
+a{color:var(--accent)}
+footer{color:var(--mute);font-size:12px;margin-top:24px}
+</style>
+</head>
+<body>
+<main>
+<h1>台股追蹤</h1>
+<p class="sub" id="sub">載入中…</p>
+<div id="warn"></div>
+<section class="idx" id="idx"></section>
+<h2>近期法說會</h2>
+<section class="card cal" id="cal"></section>
+<div id="stocks"></div>
+<footer>行情：臺灣證券交易所、證券櫃檯買賣中心開放資料，每個交易日收盤後自動更新。法說會與產品比重為人工整理並附來源，僅供研究參考，非投資建議。</footer>
+</main>
+<script>
+const MIX=["#2b4a7a","#c98a2b","#4f8f7b","#a4567f","#7a6bb5","#8a8a8a"];
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const fmt=n=>n==null?"—":n.toLocaleString("zh-TW",{maximumFractionDigits:2});
+const cls=n=>n==null||n===0?"flat":n>0?"up":"down";
+const chgText=(c,p)=>c==null?"—":`${c>0?"▲":c<0?"▼":""}${fmt(Math.abs(c))}（${p==null?"—":(p>0?"+":"")+p.toFixed(2)+"%"}）`;
+async function j(p){try{const r=await fetch(p+"?t="+Date.now());return r.ok?await r.json():null}catch(e){return null}}
+function spark(vals,up){
+  const ns="http://www.w3.org/2000/svg",s=document.createElementNS(ns,"svg");s.setAttribute("class","spark");s.setAttribute("viewBox","0 0 100 34");s.setAttribute("preserveAspectRatio","none");
+  const mn=Math.min(...vals),mx=Math.max(...vals),r=mx-mn||1;
+  const d=vals.map((v,i)=>`${i?"L":"M"}${(i/(vals.length-1)*100).toFixed(1)},${(31-(v-mn)/r*28).toFixed(1)}`).join("");
+  const p=document.createElementNS(ns,"path");p.setAttribute("d",d);p.setAttribute("fill","none");p.setAttribute("stroke",`var(--${up})`);p.setAttribute("stroke-width","1.5");p.setAttribute("vector-effect","non-scaling-stroke");s.append(p);return s}
+(async()=>{
+  const [wl,latest,hist,fund]=await Promise.all([j("watchlist.json"),j("data/latest.json"),j("data/history.json"),j("fundamentals.json")]);
+  const sub=document.getElementById("sub");
+  if(!wl){sub.textContent="讀不到關注清單";return}
+  const L=latest||{indices:{},stocks:{},problems:[]},H=hist||{},F=(fund&&fund.items)||{};
+  const days=Object.keys(H).sort();
+  sub.textContent=latest?`交易日 ${L.trade_date||"—"}・更新於 ${(L.fetched_at||"").replace("T"," ").slice(0,16)}`:"尚未有行情資料（等待第一次自動更新）";
+  if(L.problems&&L.problems.length){const w=el("div","warn",L.problems.join("；"));document.getElementById("warn").append(w)}
+  const series=k=>days.map(d=>H[d][k]).filter(v=>v!=null).slice(-60);
+  const idx=document.getElementById("idx");
+  for(const i of wl.indices){const v=L.indices[i.id]||{},c=el("div","card");
+    c.append(el("div","n",i.name),el("div","v",fmt(v.close)),el("div","chg "+cls(v.change),chgText(v.change,v.pct)));
+    const s=series(i.id);if(s.length>1)c.append(spark(s,cls(s[s.length-1]-s[0])));idx.append(c)}
+  const cal=document.getElementById("cal"),today=new Date().toISOString().slice(0,10);
+  const ev=wl.stocks.map(s=>({s,c:(F[s.code]||{}).conference})).filter(x=>x.c&&x.c.date).sort((a,b)=>a.c.date<b.c.date?-1:1);
+  const upc=ev.filter(x=>x.c.date>=today),show=upc.length?upc:ev.slice(-5);
+  if(!show.length)cal.append(el("span","todo","法說會日程整理中"));
+  for(const x of show){const r=el("div"),t=el("time",null,x.c.date);r.append(t,el("span",null,`${x.s.name}${x.c.note?"｜"+x.c.note:""}`));cal.append(r)}
+  const box=document.getElementById("stocks");let g="";
+  for(const s of wl.stocks){
+    if(s.group!==g){g=s.group;box.append(el("h2",null,g))}
+    const v=L.stocks[s.code]||{},f=F[s.code]||{},d=el("details","card stock"),sm=el("summary");
+    const n=el("div");n.append(el("span","nm",s.name),el("span","cd",s.code));
+    sm.append(n,el("div","px",fmt(v.close)),el("div","pos",s.position),el("div","chg "+cls(v.change),chgText(v.change,v.pct)));
+    d.append(sm);
+    const b=el("div","body"),dl=el("dl");dl.style.margin=0;
+    const ss=series(s.code);if(ss.length>1){b.append(spark(ss,cls(ss[ss.length-1]-ss[0])))}
+    dl.append(el("dt",null,"今日"),el("dd",null,`開 ${fmt(v.open)}・高 ${fmt(v.high)}・低 ${fmt(v.low)}・量 ${v.volume==null?"—":fmt(Math.round(v.volume/1000))+" 張"}`));
+    dl.append(el("dt",null,"供應鏈位置"),el("dd",null,s.position));
+    dl.append(el("dt",null,"產品比重"+(f.mix_period?`（${f.mix_period}）`:"")));
+    const dd=el("dd");
+    if(f.product_mix&&f.product_mix.length){const bar=el("div","bar"),lg=el("div","leg");
+      f.product_mix.forEach((m,i)=>{const seg=el("i");seg.style.width=m.pct+"%";seg.style.background=MIX[i%MIX.length];bar.append(seg);
+        const it=el("span"),sw=el("b");sw.style.background=MIX[i%MIX.length];it.append(sw,document.createTextNode(`${m.name} ${m.pct}%`));lg.append(it)});
+      dd.append(bar,lg)}else dd.append(el("span","todo","整理中"));
+    dl.append(dd);
+    dl.append(el("dt",null,"法說會"));const cd=el("dd");
+    if(f.conference&&f.conference.date){cd.textContent=`${f.conference.date}${f.conference.note?"｜"+f.conference.note:""}`}else cd.append(el("span","todo","整理中"));
+    dl.append(cd);
+    if(f.sources&&f.sources.length){dl.append(el("dt",null,"來源"));const sd=el("dd");
+      f.sources.forEach((u,i)=>{const a=el("a",null,u.title||"連結");a.href=u.url;a.target="_blank";a.rel="noopener";if(i)sd.append("、");sd.append(a)});dl.append(sd)}
+    b.append(dl);d.append(b);box.append(d)}
+})();
+</script>
+</body>
+</html>

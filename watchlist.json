@@ -1,0 +1,24 @@
+{
+  "indices": [
+    {"id": "TAIEX", "name": "加權指數", "market": "twse"},
+    {"id": "TPEX", "name": "櫃買指數", "market": "tpex"}
+  ],
+  "stocks": [
+    {"code": "2330", "name": "台積電", "market": "twse", "group": "晶圓代工", "position": "上游｜晶圓代工龍頭，先進製程與 CoWoS 先進封裝"},
+    {"code": "2303", "name": "聯電", "market": "twse", "group": "晶圓代工", "position": "上游｜成熟／特殊製程晶圓代工"},
+    {"code": "2454", "name": "聯發科", "market": "twse", "group": "IC 設計", "position": "上游｜無晶圓廠 IC 設計（手機 SoC、ASIC、連網晶片）"},
+    {"code": "2344", "name": "華邦電", "market": "twse", "group": "記憶體", "position": "上游｜利基型 DRAM 與 NOR/NAND Flash 製造"},
+    {"code": "2337", "name": "旺宏", "market": "twse", "group": "記憶體", "position": "上游｜NOR Flash 與 ROM 製造"},
+    {"code": "3711", "name": "日月光投控", "market": "twse", "group": "封測", "position": "中游｜封裝測試龍頭（含矽品）與 EMS"},
+    {"code": "6510", "name": "精測", "market": "tpex", "group": "封測", "position": "中游｜晶圓測試介面（探針卡、測試載板）"},
+    {"code": "2327", "name": "國巨", "market": "twse", "group": "被動元件", "position": "上游零組件｜MLCC、晶片電阻、鉭質電容等被動元件"},
+    {"code": "2308", "name": "台達電", "market": "twse", "group": "電源／散熱", "position": "中游零組件｜電源供應器、散熱、資料中心電力基礎設施"},
+    {"code": "2382", "name": "廣達", "market": "twse", "group": "AI 伺服器 ODM", "position": "下游｜筆電與 AI 伺服器代工組裝"},
+    {"code": "2324", "name": "仁寶", "market": "twse", "group": "AI 伺服器 ODM", "position": "下游｜筆電代工為主，拓展伺服器"},
+    {"code": "2317", "name": "鴻海", "market": "twse", "group": "AI 伺服器 ODM", "position": "下游｜EMS 龍頭，消費電子與 AI 伺服器機櫃組裝"},
+    {"code": "2395", "name": "研華", "market": "twse", "group": "邊緣 AI／AI PC", "position": "下游｜工業電腦與邊緣運算平台品牌"},
+    {"code": "2357", "name": "華碩", "market": "twse", "group": "邊緣 AI／AI PC", "position": "下游｜PC／主機板／顯卡品牌，兼營 AI 伺服器"},
+    {"code": "2377", "name": "微星", "market": "twse", "group": "邊緣 AI／AI PC", "position": "下游｜電競筆電、主機板、顯卡品牌"},
+    {"code": "2353", "name": "宏碁", "market": "twse", "group": "邊緣 AI／AI PC", "position": "下游｜PC 品牌"}
+  ]
+}
