@@ -50,7 +50,7 @@ footer{color:var(--mute);font-size:12px;margin-top:24px}
 <p class="sub" id="sub">載入中…</p>
 <div id="warn"></div>
 <section class="idx" id="idx"></section>
-<h2>近期法說會</h2>
+<h2 id="calh">法說會</h2>
 <section class="card cal" id="cal"></section>
 <div id="stocks"></div>
 <footer>行情：臺灣證券交易所、證券櫃檯買賣中心開放資料，每個交易日收盤後自動更新。法說會與產品比重為人工整理並附來源，僅供研究參考，非投資建議。</footer>
@@ -83,6 +83,7 @@ function spark(vals,up){
   const cal=document.getElementById("cal"),today=new Date().toISOString().slice(0,10);
   const ev=wl.stocks.map(s=>({s,c:(F[s.code]||{}).conference})).filter(x=>x.c&&x.c.date).sort((a,b)=>a.c.date<b.c.date?-1:1);
   const upc=ev.filter(x=>x.c.date>=today),show=upc.length?upc:ev.slice(-5);
+  document.getElementById("calh").textContent=upc.length?"即將舉行的法說會":"最近的法說會（下一季日期尚未公布）";
   if(!show.length)cal.append(el("span","todo","法說會日程整理中"));
   for(const x of show){const r=el("div"),t=el("time",null,x.c.date);r.append(t,el("span",null,`${x.s.name}${x.c.note?"｜"+x.c.note:""}`));cal.append(r)}
   const box=document.getElementById("stocks");let g="";
@@ -102,7 +103,8 @@ function spark(vals,up){
     if(f.product_mix&&f.product_mix.length){const bar=el("div","bar"),lg=el("div","leg");
       f.product_mix.forEach((m,i)=>{const seg=el("i");seg.style.width=m.pct+"%";seg.style.background=MIX[i%MIX.length];bar.append(seg);
         const it=el("span"),sw=el("b");sw.style.background=MIX[i%MIX.length];it.append(sw,document.createTextNode(`${m.name} ${m.pct}%`));lg.append(it)});
-      dd.append(bar,lg)}else dd.append(el("span","todo","整理中"));
+      dd.append(bar,lg)}else if(!f.mix_note)dd.append(el("span","todo","整理中"));
+    if(f.mix_note)dd.append(el("div",null,f.mix_note));
     dl.append(dd);
     dl.append(el("dt",null,"法說會"));const cd=el("dd");
     if(f.conference&&f.conference.date){cd.textContent=`${f.conference.date}${f.conference.note?"｜"+f.conference.note:""}`}else cd.append(el("span","todo","整理中"));

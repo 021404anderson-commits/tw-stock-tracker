@@ -1,4 +1,442 @@
 {
-  "_說明": "法說會與產品比重。每檔一筆，key 為股票代號。conference.date 用 YYYY-MM-DD；product_mix 的 pct 為百分比。",
-  "items": {}
+ "_說明": "法說會與產品比重，人工整理並附來源。key 為股票代號。",
+ "updated": "2026-11-17",
+ "items": {
+  "2330": {
+   "conference": {
+    "date": "2026-10-15",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・應用平台別",
+   "product_mix": [
+    {
+     "name": "HPC",
+     "pct": 68
+    },
+    {
+     "name": "智慧型手機",
+     "pct": 21
+    },
+    {
+     "name": "車用",
+     "pct": 4
+    },
+    {
+     "name": "物聯網",
+     "pct": 4
+    },
+    {
+     "name": "消費性電子",
+     "pct": 1
+    },
+    {
+     "name": "其他",
+     "pct": 2
+    }
+   ],
+   "mix_note": "製程別：2 奈米 8%、3 奈米 33%、5 奈米 28%、7 奈米 10%。「其他」為餘額推算。",
+   "sources": [
+    {
+     "title": "股感 Q3 法說會重點",
+     "url": "https://www.stockfeel.com.tw/%E5%8F%B0%E7%A9%8D%E9%9B%BB-2330-2026q3-%E6%B3%95%E8%AA%AA%E6%9C%83/"
+    }
+   ]
+  },
+  "2303": {
+   "conference": {
+    "date": "2026-10-28",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・應用別",
+   "product_mix": [
+    {
+     "name": "通訊",
+     "pct": 39
+    },
+    {
+     "name": "消費",
+     "pct": 32
+    },
+    {
+     "name": "電腦",
+     "pct": 13
+    },
+    {
+     "name": "其他",
+     "pct": 16
+    }
+   ],
+   "mix_note": "製程別：22/28 奈米 35%、40 奈米 16%、65 奈米 19%。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae29af2fd897800014c7150"
+    }
+   ]
+  },
+  "2454": {
+   "conference": {
+    "date": "2026-10-30",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品線別",
+   "product_mix": [
+    {
+     "name": "智慧裝置平台",
+     "pct": 58
+    },
+    {
+     "name": "手機",
+     "pct": 37
+    },
+    {
+     "name": "電源管理 IC",
+     "pct": 5
+    }
+   ],
+   "mix_note": "AI 加速器（ASIC）未單獨揭露 Q3 占比。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae478b3fd897800019f7237"
+    }
+   ]
+  },
+  "2344": {
+   "conference": {
+    "date": "2026-11-03",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品別",
+   "product_mix": [
+    {
+     "name": "DRAM（CMS）",
+     "pct": 58
+    },
+    {
+     "name": "Flash",
+     "pct": 32
+    },
+    {
+     "name": "邏輯 IC（新唐）",
+     "pct": 9
+    },
+    {
+     "name": "其他",
+     "pct": 1
+    }
+   ],
+   "mix_note": "記憶體應用別：通訊 31%、車用與工業 26%、消費 26%、電腦 17%。「其他」為餘額推算。",
+   "sources": [
+    {
+     "title": "股感 Q3 法說會重點",
+     "url": "https://www.stockfeel.com.tw/%E8%8F%AF%E9%82%A6%E9%9B%BB-2344-2026q3-%E6%B3%95%E8%AA%AA%E6%9C%83/"
+    }
+   ]
+  },
+  "2337": {
+   "conference": {
+    "date": "2026-10-27",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品別（母公司）",
+   "product_mix": [
+    {
+     "name": "NAND（含 eMMC）",
+     "pct": 47
+    },
+    {
+     "name": "NOR",
+     "pct": 46
+    },
+    {
+     "name": "ROM",
+     "pct": 5
+    },
+    {
+     "name": "晶圓代工",
+     "pct": 2
+    }
+   ],
+   "mix_note": "晶圓代工約 2–3%。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae13f24fd89780001b4bece"
+    }
+   ]
+  },
+  "3711": {
+   "conference": {
+    "date": "2026-10-29",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・事業別",
+   "product_mix": [
+    {
+     "name": "封測（ATM）",
+     "pct": 62
+    },
+    {
+     "name": "電子代工（EMS）",
+     "pct": 38
+    }
+   ],
+   "mix_note": "封測內：通訊 38%、運算 34%、車用／消費／其他 28%；凸塊／覆晶／晶圓級／SiP 51%、打線 24%、測試 17%。事業別含內部銷售，合計略高於 100%。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae435ecfd897800015b695a"
+    }
+   ]
+  },
+  "6510": {
+   "conference": {
+    "date": "2026-10-28",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品別",
+   "product_mix": [
+    {
+     "name": "晶圓測試",
+     "pct": 68
+    },
+    {
+     "name": "IC 測試",
+     "pct": 28
+    },
+    {
+     "name": "其他",
+     "pct": 4
+    }
+   ],
+   "mix_note": "應用別：HPC 65.9%。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae29d54fd897800014ce816"
+    }
+   ]
+  },
+  "2327": {
+   "conference": {
+    "date": "2026-10-29",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品別",
+   "product_mix": [
+    {
+     "name": "鉭質電容",
+     "pct": 23.7
+    },
+    {
+     "name": "磁性元件",
+     "pct": 22.3
+    },
+    {
+     "name": "MLCC",
+     "pct": 21.5
+    },
+    {
+     "name": "電阻",
+     "pct": 15.3
+    },
+    {
+     "name": "感測器",
+     "pct": 10.6
+    },
+    {
+     "name": "其他",
+     "pct": 6.6
+    }
+   ],
+   "mix_note": "應用別：AI 19.8%、工業 28.7%、車用 14.9%。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae321a8fd897800012986f9"
+    }
+   ]
+  },
+  "2308": {
+   "conference": {
+    "date": "2026-10-29",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・事業別",
+   "product_mix": [
+    {
+     "name": "電源及零組件",
+     "pct": 53.8
+    },
+    {
+     "name": "基礎設施",
+     "pct": 33.5
+    },
+    {
+     "name": "自動化",
+     "pct": 8.1
+    },
+    {
+     "name": "交通",
+     "pct": 4.6
+    }
+   ],
+   "mix_note": "占比由各事業營收換算。",
+   "sources": [
+    {
+     "title": "淘金脈絡 Q3 法說整理",
+     "url": "https://vocus.cc/article/6ae3211ffd897800012970fb"
+    }
+   ]
+  },
+  "2382": {
+   "conference": {
+    "date": "2026-11-11",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": null,
+   "product_mix": [],
+   "mix_note": "公司未揭露完整產品比重。法說會表示明年整體伺服器營收占比上看 9 成。",
+   "sources": [
+    {
+     "title": "鉅亨網 廣達法說",
+     "url": "https://news.cnyes.com/news/id/6658658"
+    }
+   ]
+  },
+  "2324": {
+   "conference": {
+    "date": "2026-11-12",
+    "note": "Q3 財報公布日（法說會日期未確認）。"
+   },
+   "mix_period": null,
+   "product_mix": [],
+   "mix_note": "公司未揭露完整產品比重。非 PC 約 36%、伺服器逾 1 成（報導未註明是單季或累計）。",
+   "sources": [
+    {
+     "title": "鉅亨網 仁寶 Q3",
+     "url": "https://news.cnyes.com/news/id/6660782"
+    }
+   ]
+  },
+  "2317": {
+   "conference": {
+    "date": "2026-11-12",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品類別",
+   "product_mix": [
+    {
+     "name": "雲端網路",
+     "pct": 54
+    },
+    {
+     "name": "消費智能",
+     "pct": 29
+    },
+    {
+     "name": "電腦終端",
+     "pct": 12
+    },
+    {
+     "name": "元件及其他",
+     "pct": 5
+    }
+   ],
+   "mix_note": null,
+   "sources": [
+    {
+     "title": "數位時代 鴻海法說",
+     "url": "https://www.bnext.com.tw/article/93040/2026-foxconn--earnings-call-"
+    }
+   ]
+  },
+  "2395": {
+   "conference": {
+    "date": "2026-11-04",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 前三季・事業群別",
+   "product_mix": [
+    {
+     "name": "智能系統",
+     "pct": 42
+    },
+    {
+     "name": "嵌入式",
+     "pct": 32
+    },
+    {
+     "name": "Service+／其他",
+     "pct": 15
+    },
+    {
+     "name": "工業物聯網",
+     "pct": 6
+    },
+    {
+     "name": "服務",
+     "pct": 5
+    }
+   ],
+   "mix_note": "高階邊緣 AI 占 24.5%。區域：北美 33%、中國 22%、歐洲 15%。",
+   "sources": [
+    {
+     "title": "股感 Q3 法說會重點",
+     "url": "https://www.stockfeel.com.tw/%E7%A0%94%E8%8F%AF-2395-2026q3-%E6%B3%95%E8%AA%AA%E6%9C%83/"
+    }
+   ]
+  },
+  "2357": {
+   "conference": {
+    "date": "2026-11-12",
+    "note": "Q3 法說會（已舉行）。下次（Q4）法說會日期尚未公布"
+   },
+   "mix_period": "2026 Q3・產品別",
+   "product_mix": [
+    {
+     "name": "系統（PC）",
+     "pct": 50
+    },
+    {
+     "name": "伺服器",
+     "pct": 30
+    },
+    {
+     "name": "零組件",
+     "pct": 20
+    }
+   ],
+   "mix_note": "區域：亞洲 42%、歐洲 35%、美洲 23%。",
+   "sources": [
+    {
+     "title": "鉅亨網 華碩法說筆記",
+     "url": "https://news.cnyes.com/news/id/6660660"
+    }
+   ]
+  },
+  "2377": {
+   "conference": {
+    "date": "2026-11-12",
+    "note": "Q3 財報公布日（法說會日期未確認）。"
+   },
+   "mix_period": null,
+   "product_mix": [],
+   "mix_note": "未查到公司揭露的最新產品比重。",
+   "sources": [
+    {
+     "title": "科技島 微星前三季",
+     "url": "https://www.technice.com.tw/project/tech-frontline/330931/"
+    }
+   ]
+  },
+  "2353": {
+   "conference": null,
+   "mix_period": null,
+   "product_mix": [],
+   "mix_note": "未查到 Q3 法說會日期與最新產品比重。",
+   "sources": []
+  }
+ }
 }
