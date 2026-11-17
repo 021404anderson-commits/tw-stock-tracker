@@ -46,6 +46,15 @@ h2{font-size:13px;color:var(--mute);font-weight:600;margin:20px 0 8px;letter-spa
 .search input::placeholder{color:var(--mute)}
 .hint{color:var(--mute);font-size:12.5px;margin:6px 2px 0;min-height:18px}
 [hidden]{display:none!important}
+.rk{padding:2px 14px}
+.rk button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:22px 1fr auto;gap:2px 8px;width:100%;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer;align-items:baseline}
+.rk button:last-child{border:0}
+.rk button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.rk .no{color:var(--mute);font-variant-numeric:tabular-nums;font-size:13px}
+.rk .g{font-weight:600}
+.rk .pc{font-weight:650;font-variant-numeric:tabular-nums;text-align:right}
+.rk .dt{grid-column:2/4;font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:2px 12px}
+.note{color:var(--mute);font-size:12px;margin:6px 2px 0}
 a{color:var(--accent)}
 footer{color:var(--mute);font-size:12px;margin-top:24px}
 </style>
@@ -60,10 +69,13 @@ footer{color:var(--mute);font-size:12px;margin-top:24px}
 <div class="hint" id="hint" aria-live="polite"></div>
 </div>
 <section class="idx" id="idx"></section>
+<h2 id="rkh" hidden>族群強弱排名</h2>
+<section class="card rk" id="rk" hidden></section>
+<p class="note" id="rkn" hidden></p>
 <h2 id="calh">法說會</h2>
 <section class="card cal" id="cal"></section>
 <div id="stocks"></div>
-<footer>行情：臺灣證券交易所、證券櫃檯買賣中心開放資料，每個交易日收盤後自動更新。法說會與產品比重為人工整理並附來源，僅供研究參考，非投資建議。</footer>
+<footer>行情與三大法人買賣超：臺灣證券交易所、證券櫃檯買賣中心公開資料，每個交易日收盤後自動更新。法說會與產品比重為人工整理並附來源，僅供研究參考，非投資建議。</footer>
 </main>
 <script>
 const MIX=["#2b4a7a","#c98a2b","#4f8f7b","#a4567f","#7a6bb5","#8a8a8a"];
@@ -88,7 +100,7 @@ function dateKey(t){let m;
   if(m=t.match(/^(20\d{2})年$/))return m[1]+"-";
   return null}
 (async()=>{
-  const [wl,latest,hist,fund]=await Promise.all([j("watchlist.json"),j("data/latest.json"),j("data/history.json"),j("fundamentals.json")]);
+  const [wl,latest,hist,fund,flow]=await Promise.all([j("watchlist.json"),j("data/latest.json"),j("data/history.json"),j("fundamentals.json"),j("data/flow.json")]);
   const sub=document.getElementById("sub");
   if(!wl){sub.textContent="讀不到關注清單";return}
   const L=latest||{indices:{},stocks:{},problems:[]},H=hist||{},F=(fund&&fund.items)||{};
@@ -119,6 +131,8 @@ function dateKey(t){let m;
     const b=el("div","body"),dl=el("dl");dl.style.margin=0;
     const ss=series(s.code);if(ss.length>1){b.append(spark(ss,cls(ss[ss.length-1]-ss[0])))}
     dl.append(el("dt",null,"今日"),el("dd",null,`開 ${fmt(v.open)}・高 ${fmt(v.high)}・低 ${fmt(v.low)}・量 ${v.volume==null?"—":fmt(Math.round(v.volume/1000))+" 張"}`));
+    if(v.inst&&v.inst.total!=null){const I=v.inst,z=n=>n==null?"—":(n>0?"+":"")+fmt(Math.round(n/1000));
+      dl.append(el("dt",null,`三大法人買賣超（${I.date.slice(5).replace("-","/")}・張）`),el("dd",null,`合計 ${z(I.total)}・外資 ${z(I.foreign)}・投信 ${z(I.trust)}・自營商 ${z(I.dealer)}`))}
     dl.append(el("dt",null,"供應鏈位置"),el("dd",null,s.position));
     dl.append(el("dt",null,"產品比重"+(f.mix_period?`（${f.mix_period}）`:"")));
     const dd=el("dd");
@@ -136,6 +150,47 @@ function dateKey(t){let m;
     b.append(dl);d.append(b);box.append(d);
     const c=f.conference||{};
     rows.push({s,d,date:c.date||"",hay:norm([s.name,s.code,s.group,s.position,f.mix_period,f.mix_note,c.note,(f.product_mix||[]).map(m=>m.name).join(" ")].filter(Boolean).join(" "))})}
+  // ── 族群強弱排名：只用已發生的價格與資金數據，不做預測 ──
+  (()=>{
+    const FL=flow||{},fdays=Object.keys(FL).sort(),avg=a=>a.reduce((x,y)=>x+y,0)/a.length,md=d=>d.slice(5).replace("-","/");
+    const names=[...new Set(wl.stocks.map(s=>s.group))];
+    let pxDate="",inDate="";
+    const G=names.map(name=>{
+      const mem=wl.stocks.filter(s=>s.group===name).map(s=>s.code),o={name,n:mem.length};
+      const pcs=mem.map(c=>(L.stocks[c]||{}).pct).filter(v=>v!=null);
+      if(pcs.length===mem.length)o.pct=avg(pcs);
+      mem.forEach(c=>{const d=(L.stocks[c]||{}).date;if(d&&d>pxDate)pxDate=d});
+      // 法人買賣超金額（估）＝買賣超股數 × 當日收盤價；占比＝該金額 ÷ 當日成交金額
+      let amt=0,val=0,ok=0;
+      for(const c of mem){const v=L.stocks[c]||{},i=v.inst;if(!i||i.total==null)continue;
+        const px=(H[i.date]||{})[c]??v.close,tv=((FL[i.date]||{})[c]||{}).v??v.value;if(px==null||!tv)continue;
+        amt+=i.total*px;val+=tv;ok++;if(i.date>inDate)inDate=i.date}
+      if(ok===mem.length){o.amt=amt;o.share=amt/val*100}
+      // 近 5 日報酬：成分股各自的 5 個交易日漲跌幅取平均
+      const r5=mem.map(c=>{const s=days.map(d=>H[d][c]).filter(v=>v!=null);return s.length>=6?(s[s.length-1]/s[s.length-6]-1)*100:null});
+      if(r5.every(v=>v!=null))o.r5=avg(r5);
+      // 量能：最新一日成交金額 ÷ 之前最多 20 日的平均
+      const tot=fdays.map(d=>{const vs=mem.map(c=>((FL[d]||{})[c]||{}).v);return vs.every(v=>v!=null)?vs.reduce((x,y)=>x+y,0):null}).filter(v=>v!=null);
+      if(tot.length>=4){const prev=tot.slice(-21,-1);o.vol=tot[tot.length-1]/avg(prev)}
+      return o});
+    if(!G.some(o=>o.pct!=null))return;
+    // 綜合分數：每個指標在各族群間排名次，換成 0～1 後取平均；某指標只要有族群缺資料就整個不計
+    const metrics=[["pct","當日漲跌"],["share","法人買賣超占成交比重"],["r5","近 5 日報酬"],["vol","量能變化"]],used=metrics.filter(([k])=>G.every(o=>o[k]!=null));
+    for(const o of G){o.score=used.length?avg(used.map(([k])=>G.filter(x=>x[k]<o[k]).length/Math.max(1,G.length-1))):0}
+    G.sort((a,b)=>b.score-a.score||(b.pct??-99)-(a.pct??-99));
+    const rk=document.getElementById("rk"),sg=(n,d=2)=>(n>0?"+":"")+n.toFixed(d);
+    G.forEach((o,i)=>{const b=el("button");b.type="button";b.title="點一下只看這個族群";
+      b.append(el("span","no",i+1),el("span","g",o.name),el("span","pc "+cls(o.pct),o.pct==null?"—":sg(o.pct)+"%"));
+      const dt=el("span","dt");dt.append(el("span",null,o.n+" 檔"));
+      if(o.amt!=null){const t=el("span",cls(o.amt),`法人${o.amt>=0?"買超":"賣超"} ${fmt(Math.abs(o.amt)/1e8)} 億（占成交 ${sg(o.share,1)}%）`);dt.append(t)}else dt.append(el("span",null,"法人 —"));
+      if(o.r5!=null)dt.append(el("span",cls(o.r5),"近5日 "+sg(o.r5)+"%"));
+      if(o.vol!=null)dt.append(el("span",null,"量能 "+o.vol.toFixed(2)+" 倍"));
+      b.append(dt);b.addEventListener("click",()=>{q.value=o.name;apply();q.scrollIntoView({block:"start",behavior:"smooth"})});rk.append(b)});
+    const wait=metrics.filter(m=>!used.includes(m)).map(m=>m[1]);
+    document.getElementById("rkh").textContent=`族群強弱排名（價格 ${pxDate?md(pxDate):"—"}${inDate?"・法人 "+md(inDate):""}）`;
+    document.getElementById("rkn").textContent=`排名綜合：${used.map(m=>m[1]).join("、")||"—"}。${wait.length?wait.join("、")+"尚在累積資料，之後自動納入。":""}這是已發生的數據，不是漲跌預測；族群只計入關注清單內的個股，法人金額為買賣超股數乘以收盤價的估算。`;
+    for(const id of ["rkh","rk","rkn"])document.getElementById(id).hidden=false;
+  })();
   // ── 搜尋 ──
   const q=document.getElementById("q"),hint=document.getElementById("hint"),none=el("p","todo","找不到符合的個股。可以試試公司名稱、股票代號、產業（如「記憶體」），或法說會日期（如 11/12）。");
   none.hidden=true;box.append(none);

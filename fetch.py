@@ -12,10 +12,13 @@ URLS = {
     "twse_index": [f"{TWSE}/exchangeReport/MI_INDEX"],
     "tpex_stocks": [f"{TPEX}/tpex_mainboard_daily_close_quotes", f"{TPEX}/tpex_mainboard_quotes"],
     "tpex_index": [f"{TPEX}/tpex_index", f"{TPEX}/tpex_reward_index"],
+    # 三大法人買賣超（單位：股）。證交所的開放資料平台沒有這張表，改用官網的 JSON 報表
+    "twse_inst": ["https://www.twse.com.tw/rwd/zh/fund/T86?selectType=ALLBUT0999&response=json"],
+    "tpex_inst": [f"{TPEX}/tpex_3insti_daily_trading"],
 }
 
-def get(urls):
-    """依序嘗試網址，回傳 (資料, 使用的網址)。"""
+def get(urls, table=False):
+    """依序嘗試網址，回傳 (資料, 使用的網址)。table=True 表示回傳的是 {fields, data} 形式的報表。"""
     ctx = ssl.create_default_context()
     ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT  # 證交所憑證在新版 Python 嚴格模式下會失敗
     last = None
@@ -24,7 +27,11 @@ def get(urls):
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 tw-stock-tracker", "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
                 rows = json.loads(r.read().decode("utf-8-sig"))
-            if rows:
+            if table:
+                if rows.get("data") and rows.get("fields"):
+                    print(f"[ok] {url} 共 {len(rows['data'])} 筆；日期 {rows.get('date')}")
+                    return rows, url
+            elif rows:
                 print(f"[ok] {url} 共 {len(rows)} 筆；欄位：{list(rows[0].keys())}")
                 return rows, url
             last = "空資料"
@@ -76,7 +83,7 @@ def parse_twse_stocks(rows, codes):
         c = pick(r, "Code", "證券代號")
         if c in codes:
             res[c] = stock_row(r, ["Code"], ["ClosingPrice", "收盤價"], ["Change", "漲跌價差"],
-                               {"open": ["OpeningPrice"], "high": ["HighestPrice"], "low": ["LowestPrice"], "volume": ["TradeVolume"]})
+                               {"open": ["OpeningPrice"], "high": ["HighestPrice"], "low": ["LowestPrice"], "volume": ["TradeVolume"], "value": ["TradeValue"]})
     return res
 
 def parse_tpex_stocks(rows, codes):
@@ -85,7 +92,38 @@ def parse_tpex_stocks(rows, codes):
         c = pick(r, "SecuritiesCompanyCode", "Code", "代號")
         if c in codes:
             res[c] = stock_row(r, ["SecuritiesCompanyCode"], ["Close", "收盤"], ["Change", "漲跌"],
-                               {"open": ["Open"], "high": ["High"], "low": ["Low"], "volume": ["TradingShares"]})
+                               {"open": ["Open"], "high": ["High"], "low": ["Low"], "volume": ["TradingShares"], "value": ["TransactionAmount"]})
+    return res
+
+def parse_twse_inst(tab, codes):
+    """證交所三大法人買賣超日報：用欄位名稱找位置，避免欄位順序變動時取錯。"""
+    res = {}
+    if not tab:
+        return res
+    f = [str(x).strip() for x in tab["fields"]]
+    date = roc_date(tab.get("date"))
+    def col(row, name):
+        return num(row[f.index(name)]) if name in f else None
+    for r in tab["data"]:
+        c = str(r[0]).strip()
+        if c in codes:
+            fo = [col(r, "外陸資買賣超股數(不含外資自營商)"), col(r, "外資自營商買賣超股數")]
+            res[c] = {"date": date, "foreign": None if fo[0] is None else fo[0] + (fo[1] or 0),
+                      "trust": col(r, "投信買賣超股數"), "dealer": col(r, "自營商買賣超股數"),
+                      "total": col(r, "三大法人買賣超股數")}
+    return res
+
+def parse_tpex_inst(rows, codes):
+    """櫃買三大法人買賣明細：官方欄位名稱夾雜不規則空白，先去掉空白再比對。"""
+    res = {}
+    for r in rows:
+        k = {"".join(str(a).split()): v for a, v in r.items()}
+        c = str(k.get("SecuritiesCompanyCode", "")).strip()
+        if c in codes:
+            res[c] = {"date": roc_date(k.get("Date")),
+                      "foreign": num(k.get("ForeignInvestorsIncludeMainlandAreaInvestors-Difference")),
+                      "trust": num(k.get("SecuritiesInvestmentTrustCompanies-Difference")),
+                      "dealer": num(k.get("Dealers-Difference")), "total": num(k.get("TotalDifference"))}
     return res
 
 def parse_twse_index(rows):
@@ -135,6 +173,16 @@ def main():
     if idx: indices["TPEX"] = idx
     else: problems.append("抓不到櫃買指數")
 
+    inst = {}
+    tab, _ = get(URLS["twse_inst"], table=True); inst.update(parse_twse_inst(tab, twse_codes))
+    rows, _ = get(URLS["tpex_inst"]); inst.update(parse_tpex_inst(rows, tpex_codes))
+    for c, v in inst.items():
+        if c in stocks and v.get("total") is not None:
+            stocks[c]["inst"] = v
+    no_inst = sorted(c for c in stocks if "inst" not in stocks[c])
+    if no_inst:
+        problems.append("抓不到三大法人買賣超：" + "、".join(no_inst))
+
     missing = sorted((twse_codes | tpex_codes) - {c for c, v in stocks.items() if v["close"] is not None})
     if missing:
         problems.append("抓不到股價：" + "、".join(missing))
@@ -155,8 +203,20 @@ def main():
                 hist.setdefault(v["date"], {})[key] = v["close"]
         hist = dict(sorted(hist.items())[-260:])  # 保留約一年
         hp.write_text(json.dumps(hist, ensure_ascii=False), encoding="utf-8")
+        # 資金流向歷史：每日成交金額 v（元）與三大法人買賣超 i（股），各依自己的資料日期入帳
+        fp = DATA / "flow.json"
+        flow = json.loads(fp.read_text(encoding="utf-8")) if fp.exists() else {}
+        for c, v in stocks.items():
+            if v.get("date") and v.get("value") is not None:
+                flow.setdefault(v["date"], {}).setdefault(c, {})["v"] = v["value"]
+            i = v.get("inst")
+            if i and i.get("date"):
+                flow.setdefault(i["date"], {}).setdefault(c, {})["i"] = i["total"]
+        flow = dict(sorted(flow.items())[-260:])
+        fp.write_text(json.dumps(flow, ensure_ascii=False), encoding="utf-8")
 
-    print(f"交易日 {trade_date}｜指數 {len(indices)}/2｜個股 {len(stocks) - len(missing)}/{len(twse_codes | tpex_codes)}")
+    total = len(twse_codes | tpex_codes)
+    print(f"交易日 {trade_date}｜指數 {len(indices)}/2｜個股 {total - len(missing)}/{total}｜法人 {len(stocks) - len(no_inst)}/{total}")
     for p in problems:
         print("[注意]", p)
     if not stocks and not indices:
