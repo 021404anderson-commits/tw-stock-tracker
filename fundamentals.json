@@ -297,11 +297,15 @@
    },
    "mix_period": null,
    "product_mix": [],
-   "mix_note": "公司未揭露完整產品比重。法說會表示明年整體伺服器營收占比上看 9 成。",
+   "mix_note": "公司未揭露完整產品比重。法說會表示明年（2027）整體伺服器營收占比上看 85%～90%、筆電占比將首度降至個位數；報導另稱 2026 全年 AI 伺服器占比有望達 60%～65%。以上皆為展望，非 Q3 實際比重。",
    "sources": [
     {
      "title": "鉅亨網 廣達法說",
      "url": "https://news.cnyes.com/news/id/6658658"
+    },
+    {
+     "title": "經濟日報 廣達法說會",
+     "url": "https://money.udn.com/money/story/5612/9872557"
     }
    ]
   },
@@ -310,13 +314,26 @@
     "date": "2026-11-12",
     "note": "Q3 財報公布日（法說會日期未確認）。"
    },
-   "mix_period": null,
-   "product_mix": [],
-   "mix_note": "公司未揭露完整產品比重。非 PC 約 36%、伺服器逾 1 成（報導未註明是單季或累計）。",
+   "mix_period": "2026 Q3・PC／非 PC",
+   "product_mix": [
+    {
+     "name": "PC",
+     "pct": 64
+    },
+    {
+     "name": "非 PC",
+     "pct": 36
+    }
+   ],
+   "mix_note": "公司只揭露非 PC 占 36%（年增 6 個百分點），「PC」為餘額推算。伺服器占營收逾 1 成（報導未說明是否計入非 PC）。",
    "sources": [
     {
      "title": "鉅亨網 仁寶 Q3",
      "url": "https://news.cnyes.com/news/id/6660782"
+    },
+    {
+     "title": "工商時報 仁寶前三季",
+     "url": "https://www.ctee.com.tw/news/20261113700800-430201"
     }
    ]
   },
@@ -423,7 +440,7 @@
    },
    "mix_period": null,
    "product_mix": [],
-   "mix_note": "未查到公司揭露的最新產品比重。",
+   "mix_note": "未查到公司揭露的最新產品比重（11/17 再查，Q3 財報報導僅有毛利率等獲利數字）。",
    "sources": [
     {
      "title": "科技島 微星前三季",
@@ -432,11 +449,32 @@
    ]
   },
   "2353": {
-   "conference": null,
-   "mix_period": null,
-   "product_mix": [],
-   "mix_note": "未查到 Q3 法說會日期與最新產品比重。",
-   "sources": []
+   "conference": {
+    "date": "2026-11-23",
+    "note": "花旗證券 Citi Taiwan Corporate Day（券商論壇，非公司自辦法說會）。Q3 財報已於 11/5 董事會通過"
+   },
+   "mix_period": "2026 Q3・事業別",
+   "product_mix": [
+    {
+     "name": "電腦及顯示器",
+     "pct": 65
+    },
+    {
+     "name": "非電腦事業",
+     "pct": 35
+    }
+   ],
+   "mix_note": "區域：泛亞太及日本 54.9%、美洲 25.7%、歐非中東 19.4%。",
+   "sources": [
+    {
+     "title": "聯合新聞網 宏碁第3季",
+     "url": "https://udn.com/news/story/7252/9860350"
+    },
+    {
+     "title": "阿股達 宏碁法說會場次",
+     "url": "https://agdstock.club/iic/2353-%E5%AE%8F%E7%A2%81"
+    }
+   ]
   }
  }
 }
