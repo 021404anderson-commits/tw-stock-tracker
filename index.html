@@ -78,7 +78,7 @@ function spark(vals,up){
   const series=k=>days.map(d=>H[d][k]).filter(v=>v!=null).slice(-60);
   const idx=document.getElementById("idx");
   for(const i of wl.indices){const v=L.indices[i.id]||{},c=el("div","card");
-    c.append(el("div","n",i.name),el("div","v",fmt(v.close)),el("div","chg "+cls(v.change),chgText(v.change,v.pct)));
+    c.append(el("div","n",i.name+(v.date&&v.date!==L.trade_date?"（"+v.date.slice(5).replace("-","/")+"）":"")),el("div","v",fmt(v.close)),el("div","chg "+cls(v.change),chgText(v.change,v.pct)));
     const s=series(i.id);if(s.length>1)c.append(spark(s,cls(s[s.length-1]-s[0])));idx.append(c)}
   const cal=document.getElementById("cal"),today=new Date().toISOString().slice(0,10);
   const ev=wl.stocks.map(s=>({s,c:(F[s.code]||{}).conference})).filter(x=>x.c&&x.c.date).sort((a,b)=>a.c.date<b.c.date?-1:1);
@@ -90,6 +90,7 @@ function spark(vals,up){
     if(s.group!==g){g=s.group;box.append(el("h2",null,g))}
     const v=L.stocks[s.code]||{},f=F[s.code]||{},d=el("details","card stock"),sm=el("summary");
     const n=el("div");n.append(el("span","nm",s.name),el("span","cd",s.code));
+    if(v.date&&v.date!==L.trade_date)n.append(el("span","cd",v.date.slice(5).replace("-","/")+" 收盤"));
     sm.append(n,el("div","px",fmt(v.close)),el("div","pos",s.position),el("div","chg "+cls(v.change),chgText(v.change,v.pct)));
     d.append(sm);
     const b=el("div","body"),dl=el("dl");dl.style.margin=0;

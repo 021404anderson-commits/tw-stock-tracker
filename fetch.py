@@ -150,8 +150,9 @@ def main():
     if trade_date:
         hp = DATA / "history.json"
         hist = json.loads(hp.read_text(encoding="utf-8")) if hp.exists() else {}
-        hist[trade_date] = {**{k: v["close"] for k, v in indices.items()},
-                            **{c: v["close"] for c, v in stocks.items() if v["close"] is not None}}
+        for key, v in list(indices.items()) + list(stocks.items()):
+            if v.get("date") and v.get("close") is not None:  # 各項目依自己的資料日期入帳
+                hist.setdefault(v["date"], {})[key] = v["close"]
         hist = dict(sorted(hist.items())[-260:])  # 保留約一年
         hp.write_text(json.dumps(hist, ensure_ascii=False), encoding="utf-8")
 
