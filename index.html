@@ -40,6 +40,12 @@ h2{font-size:13px;color:var(--mute);font-weight:600;margin:20px 0 8px;letter-spa
 .cal div{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
 .cal div:last-child{border:0}
 .cal time{font-variant-numeric:tabular-nums;color:var(--accent);min-width:86px}
+.search{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin-bottom:6px}
+.search input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;outline:none;-webkit-appearance:none;appearance:none}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.search input::placeholder{color:var(--mute)}
+.hint{color:var(--mute);font-size:12.5px;margin:6px 2px 0;min-height:18px}
+[hidden]{display:none!important}
 a{color:var(--accent)}
 footer{color:var(--mute);font-size:12px;margin-top:24px}
 </style>
@@ -49,6 +55,10 @@ footer{color:var(--mute);font-size:12px;margin-top:24px}
 <h1>台股每日追蹤系統</h1>
 <p class="sub" id="sub">載入中…</p>
 <div id="warn"></div>
+<div class="search" role="search">
+<input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="搜尋公司、代號或法說會日期" aria-describedby="hint" placeholder="搜尋：公司名稱、代號，或法說會日期（如 11/12、11月）">
+<div class="hint" id="hint" aria-live="polite"></div>
+</div>
 <section class="idx" id="idx"></section>
 <h2 id="calh">法說會</h2>
 <section class="card cal" id="cal"></section>
@@ -67,6 +77,16 @@ function spark(vals,up){
   const mn=Math.min(...vals),mx=Math.max(...vals),r=mx-mn||1;
   const d=vals.map((v,i)=>`${i?"L":"M"}${(i/(vals.length-1)*100).toFixed(1)},${(31-(v-mn)/r*28).toFixed(1)}`).join("");
   const p=document.createElementNS(ns,"path");p.setAttribute("d",d);p.setAttribute("fill","none");p.setAttribute("stroke",`var(--${up})`);p.setAttribute("stroke-width","1.5");p.setAttribute("vector-effect","non-scaling-stroke");s.append(p);return s}
+const norm=t=>String(t||"").normalize("NFKC").toLowerCase().trim();
+const p2=n=>String(n).padStart(2,"0");
+// 把輸入的日期寫法轉成可比對 YYYY-MM-DD 的片段；不是日期就回傳 null
+function dateKey(t){let m;
+  if(m=t.match(/^(\d{4})[-\/.年](\d{1,2})[-\/.月](\d{1,2})日?$/))return `${m[1]}-${p2(m[2])}-${p2(m[3])}`;
+  if(m=t.match(/^(\d{4})[-\/.年](\d{1,2})月?$/))return `${m[1]}-${p2(m[2])}`;
+  if(m=t.match(/^(\d{1,2})[-\/.月](\d{1,2})[日號]?$/))return `-${p2(m[1])}-${p2(m[2])}`;
+  if(m=t.match(/^(\d{1,2})月$/))return `-${p2(m[1])}-`;
+  if(m=t.match(/^(20\d{2})年$/))return m[1]+"-";
+  return null}
 (async()=>{
   const [wl,latest,hist,fund]=await Promise.all([j("watchlist.json"),j("data/latest.json"),j("data/history.json"),j("fundamentals.json")]);
   const sub=document.getElementById("sub");
@@ -82,13 +102,15 @@ function spark(vals,up){
     const s=series(i.id);if(s.length>1)c.append(spark(s,cls(s[s.length-1]-s[0])));idx.append(c)}
   const cal=document.getElementById("cal"),today=new Date().toISOString().slice(0,10);
   const ev=wl.stocks.map(s=>({s,c:(F[s.code]||{}).conference})).filter(x=>x.c&&x.c.date).sort((a,b)=>a.c.date<b.c.date?-1:1);
-  const upc=ev.filter(x=>x.c.date>=today),show=upc.length?upc:ev.slice(-5);
-  document.getElementById("calh").textContent=upc.length?"即將舉行的法說會":"最近的法說會（下一季日期尚未公布）";
-  if(!show.length)cal.append(el("span","todo","法說會日程整理中"));
-  for(const x of show){const r=el("div"),t=el("time",null,x.c.date);r.append(t,el("span",null,`${x.s.name}${x.c.note?"｜"+x.c.note:""}`));cal.append(r)}
-  const box=document.getElementById("stocks");let g="";
+  const upc=ev.filter(x=>x.c.date>=today),calh=document.getElementById("calh");
+  function drawCal(show,title,empty){calh.textContent=title;cal.replaceChildren();
+    if(!show.length)cal.append(el("span","todo",empty));
+    for(const x of show){const r=el("div"),t=el("time",null,x.c.date);r.append(t,el("span",null,`${x.s.name}${x.c.note?"｜"+x.c.note:""}`));cal.append(r)}}
+  const calDefault=()=>drawCal(upc.length?upc:ev.slice(-5),upc.length?"即將舉行的法說會":"最近的法說會（下一季日期尚未公布）","法說會日程整理中");
+  calDefault();
+  const box=document.getElementById("stocks"),rows=[],heads={};let g="";
   for(const s of wl.stocks){
-    if(s.group!==g){g=s.group;box.append(el("h2",null,g))}
+    if(s.group!==g){g=s.group;heads[g]=el("h2",null,g);box.append(heads[g])}
     const v=L.stocks[s.code]||{},f=F[s.code]||{},d=el("details","card stock"),sm=el("summary");
     const n=el("div");n.append(el("span","nm",s.name),el("span","cd",s.code));
     if(v.date&&v.date!==L.trade_date)n.append(el("span","cd",v.date.slice(5).replace("-","/")+" 收盤"));
@@ -111,7 +133,28 @@ function spark(vals,up){
     dl.append(cd);
     if(f.sources&&f.sources.length){dl.append(el("dt",null,"來源"));const sd=el("dd");
       f.sources.forEach((u,i)=>{const a=el("a",null,u.title||"連結");a.href=u.url;a.target="_blank";a.rel="noopener";if(i)sd.append("、");sd.append(a)});dl.append(sd)}
-    b.append(dl);d.append(b);box.append(d)}
+    b.append(dl);d.append(b);box.append(d);
+    const c=f.conference||{};
+    rows.push({s,d,date:c.date||"",hay:norm([s.name,s.code,s.group,s.position,f.mix_period,f.mix_note,c.note,(f.product_mix||[]).map(m=>m.name).join(" ")].filter(Boolean).join(" "))})}
+  // ── 搜尋 ──
+  const q=document.getElementById("q"),hint=document.getElementById("hint"),none=el("p","todo","找不到符合的個股。可以試試公司名稱、股票代號、產業（如「記憶體」），或法說會日期（如 11/12）。");
+  none.hidden=true;box.append(none);
+  let opened=null;
+  function apply(){
+    const terms=norm(q.value).split(/\s+/).filter(Boolean);
+    if(opened){opened.open=false;opened=null}
+    if(!terms.length){rows.forEach(r=>r.d.hidden=false);Object.values(heads).forEach(h=>h.hidden=false);none.hidden=true;hint.textContent="";calDefault();return}
+    const hit=rows.filter(r=>{const ok=terms.every(t=>{const k=dateKey(t);return r.hay.includes(t)||(k&&r.date.includes(k))});r.d.hidden=!ok;return ok});
+    for(const g in heads)heads[g].hidden=!hit.some(r=>r.s.group===g);
+    none.hidden=hit.length>0;
+    hint.textContent=hit.length?`找到 ${hit.length} 檔`:"";
+    const codes=new Set(hit.map(r=>r.s.code));
+    drawCal(ev.filter(x=>codes.has(x.s.code)),"符合的法說會","符合的個股沒有已知的法說會日期");
+    if(hit.length===1&&!hit[0].d.open){hit[0].d.open=true;opened=hit[0].d}
+  }
+  q.addEventListener("input",apply);
+  q.addEventListener("keydown",e=>{if(e.key==="Enter")q.blur();if(e.key==="Escape"){q.value="";apply()}});
+  if(q.value)apply();
 })();
 </script>
 </body>
