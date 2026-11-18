@@ -1,0 +1,35 @@
+name: 盤中更新
+
+on:
+  schedule:
+    - cron: "2 2 * * 1-5"    # 台北時間 10:02
+    - cron: "2 3 * * 1-5"    # 台北時間 11:02
+    - cron: "2 4 * * 1-5"    # 台北時間 12:02
+    - cron: "2 5 * * 1-5"    # 台北時間 13:02
+    - cron: "32 5 * * 1-5"   # 台北時間 13:32（收盤 13:30 的最後撮合之後）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python fetch.py --intraday
+      - name: 存回資料
+        run: |
+          git config user.name "tw-stock-tracker"
+          git config user.email "actions@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "盤中更新 $(TZ=Asia/Taipei date '+%F %H:%M')"
+          git pull --rebase
+          git push

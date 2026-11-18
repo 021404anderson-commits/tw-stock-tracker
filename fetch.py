@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """每日抓取台股指數與關注個股收盤資料（證交所／櫃買中心 OpenAPI）。
-只用 Python 內建模組。輸出 data/latest.json 並累積 data/history.json。"""
+只用 Python 內建模組。輸出 data/latest.json 並累積 data/history.json。
+加上 --intraday 參數時改抓盤中即時報價（證交所基本市況報導網站），只寫 data/intraday.json。"""
 import json, ssl, sys, urllib.request, datetime, pathlib
 
 ROOT = pathlib.Path(__file__).parent
@@ -158,6 +159,56 @@ def parse_tpex_index(rows):
             best = cand
     return best
 
+MIS = "https://mis.twse.com.tw/stock/api/getStockInfo.jsp?json=1&delay=0&ex_ch="
+
+def intraday():
+    """盤中即時報價：只寫 data/intraday.json，不動收盤歷史與族群排名用的資料。"""
+    wl = json.loads((ROOT / "watchlist.json").read_text(encoding="utf-8"))
+    keys = {"tse_t00.tw": "TAIEX", "otc_o00.tw": "TPEX"}
+    for s in wl["stocks"]:
+        keys[("tse_" if s["market"] == "twse" else "otc_") + s["code"] + ".tw"] = s["code"]
+    ctx = ssl.create_default_context()
+    ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    req = urllib.request.Request(MIS + "|".join(keys), headers={"User-Agent": "Mozilla/5.0 tw-stock-tracker", "Referer": "https://mis.twse.com.tw/stock/index.jsp"})
+    with urllib.request.urlopen(req, timeout=30, context=ctx) as r:
+        msgs = json.loads(r.read().decode("utf-8")).get("msgArray") or []
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+    today = now.strftime("%Y-%m-%d")
+    path = DATA / "intraday.json"
+    prev = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if prev.get("date") != today:
+        prev = {}
+    out = {"date": None, "time": None, "fetched_at": now.isoformat(timespec="seconds"), "indices": {}, "stocks": {}}
+    for m in msgs:
+        k = keys.get(f"{m.get('ex')}_{m.get('c')}.tw")
+        if not k:
+            continue
+        d = roc_date(m.get("d"))
+        if d != today:
+            continue  # 非交易日時官方會回傳上一個交易日的資料，不採用
+        y = num(m.get("y"))
+        z = num(m.get("z"))  # 最近成交價；當下那一盤沒有成交時是「-」
+        grp = "indices" if k in ("TAIEX", "TPEX") else "stocks"
+        if z is None:
+            z = (prev.get(grp, {}).get(k) or {}).get("close")  # 沿用今天稍早抓到的成交價，不用委買委賣價推估
+        if z is None or y is None:
+            continue
+        v = {"close": z, "change": round(z - y, 2), "pct": round((z - y) / y * 100, 2) if y else None, "date": d,
+             "open": num(m.get("o")), "high": num(m.get("h")), "low": num(m.get("l"))}
+        if grp == "stocks" and num(m.get("v")) is not None:
+            v["volume"] = num(m.get("v")) * 1000  # 官方單位是張，換成股，與收盤資料一致
+        out[grp][k] = v
+        out["date"] = d
+        t = str(m.get("t") or "")
+        if grp == "stocks" and t > (out["time"] or ""):  # 以個股成交時間為準（指數時間會晚幾分鐘）
+            out["time"] = t
+    if not out["date"]:
+        print("今天沒有盤中資料（非交易日或尚未開盤），不更新")
+        return
+    DATA.mkdir(exist_ok=True)
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"盤中 {out['date']} {out['time']}｜指數 {len(out['indices'])}/2｜個股 {len(out['stocks'])}/{len(wl['stocks'])}")
+
 def main():
     wl = json.loads((ROOT / "watchlist.json").read_text(encoding="utf-8"))
     twse_codes = {s["code"] for s in wl["stocks"] if s["market"] == "twse"}
@@ -223,4 +274,4 @@ def main():
         sys.exit("完全沒有抓到資料")
 
 if __name__ == "__main__":
-    main()
+    intraday() if "--intraday" in sys.argv else main()

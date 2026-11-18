@@ -9,6 +9,7 @@
 | 項目 | 來源 | 更新方式 |
 |---|---|---|
 | 加權指數、櫃買指數、個股開高低收、成交量與成交金額、三大法人買賣超 | 證交所、櫃買中心公開資料 | GitHub Actions 每個交易日 15:37、18:07、21:07（台北時間）自動執行 `fetch.py` |
+| 盤中即時報價（指數與個股） | 證交所基本市況報導網站 | GitHub Actions 每個交易日 10:02、11:02、12:02、13:02、13:32 執行 `fetch.py --intraday`，只寫 `data/intraday.json` |
 | 法說會日期、產品比重 | 財經媒體的法說會整理，附來源連結 | Claude 排程任務每週六 08:43 檢查並更新 `fundamentals.json` |
 | 供應鏈位置、關注清單 | 人工設定 | 修改 `watchlist.json` |
 
@@ -44,7 +45,9 @@
 - `data/history.json`：累積的每日收盤（約保留一年），用來畫走勢線
 - `data/flow.json`：累積的每日成交金額與三大法人買賣超（約保留一年），用來算族群排名
 - `index.html`：網頁
+- `data/intraday.json`：最新一次盤中報價；收盤資料進來後網頁自動改回顯示收盤價
 - `.github/workflows/daily.yml`：每日自動執行的排程
+- `.github/workflows/intraday.yml`：盤中更新的排程
 
 ## 常見調整
 

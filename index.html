@@ -100,12 +100,18 @@ function dateKey(t){let m;
   if(m=t.match(/^(20\d{2})年$/))return m[1]+"-";
   return null}
 (async()=>{
-  const [wl,latest,hist,fund,flow]=await Promise.all([j("watchlist.json"),j("data/latest.json"),j("data/history.json"),j("fundamentals.json"),j("data/flow.json")]);
+  const [wl,latest,hist,fund,flow,intra]=await Promise.all([j("watchlist.json"),j("data/latest.json"),j("data/history.json"),j("fundamentals.json"),j("data/flow.json"),j("data/intraday.json")]);
   const sub=document.getElementById("sub");
   if(!wl){sub.textContent="讀不到關注清單";return}
   const L=latest||{indices:{},stocks:{},problems:[]},H=hist||{},F=(fund&&fund.items)||{};
   const days=Object.keys(H).sort();
-  sub.textContent=latest?`交易日 ${L.trade_date||"—"}・更新於 ${(L.fetched_at||"").replace("T"," ").slice(0,16)}`:"尚未有行情資料（等待第一次自動更新）";
+  // 盤中報價比收盤資料新的項目，用盤中報價蓋過（法人買賣超保留前一日）
+  let live=false;
+  if(intra&&intra.date){for(const [grp,src] of [["indices",intra.indices||{}],["stocks",intra.stocks||{}]])
+    for(const k in src){const old=L[grp][k]||{};if(!old.date||src[k].date>old.date){L[grp][k]={...src[k],inst:old.inst};live=true}}}
+  if(live){const t=(intra.time||"").slice(0,5),fin=t>="13:30";L.trade_date=intra.date;
+    sub.textContent=`${intra.date} ${fin?"收盤":"盤中"} ${t}（即時報價${fin?"，官方盤後資料 15:37 後更新":"，非收盤價"}）`}
+  else sub.textContent=latest?`交易日 ${L.trade_date||"—"}・更新於 ${(L.fetched_at||"").replace("T"," ").slice(0,16)}`:"尚未有行情資料（等待第一次自動更新）";
   if(L.problems&&L.problems.length){const w=el("div","warn",L.problems.join("；"));document.getElementById("warn").append(w)}
   const series=k=>days.map(d=>H[d][k]).filter(v=>v!=null).slice(-60);
   const idx=document.getElementById("idx");
@@ -187,7 +193,7 @@ function dateKey(t){let m;
       if(o.vol!=null)dt.append(el("span",null,"量能 "+o.vol.toFixed(2)+" 倍"));
       b.append(dt);b.addEventListener("click",()=>{q.value=o.name;apply();q.scrollIntoView({block:"start",behavior:"smooth"})});rk.append(b)});
     const wait=metrics.filter(m=>!used.includes(m)).map(m=>m[1]);
-    document.getElementById("rkh").textContent=`族群強弱排名（價格 ${pxDate?md(pxDate):"—"}${inDate?"・法人 "+md(inDate):""}）`;
+    document.getElementById("rkh").textContent=`族群強弱排名（價格 ${pxDate?md(pxDate):"—"}${live?" 盤中":""}${inDate?"・法人 "+md(inDate):""}）`;
     document.getElementById("rkn").textContent=`排名綜合：${used.map(m=>m[1]).join("、")||"—"}。${wait.length?wait.join("、")+"尚在累積資料，之後自動納入。":""}這是已發生的數據，不是漲跌預測；族群只計入關注清單內的個股，法人金額為買賣超股數乘以收盤價的估算。`;
     for(const id of ["rkh","rk","rkn"])document.getElementById(id).hidden=false;
   })();
