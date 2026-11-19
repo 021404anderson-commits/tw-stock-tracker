@@ -2,7 +2,7 @@
 """每日抓取台股指數與關注個股收盤資料（證交所／櫃買中心 OpenAPI）。
 只用 Python 內建模組。輸出 data/latest.json 並累積 data/history.json。
 加上 --intraday 參數時改抓盤中即時報價（證交所基本市況報導網站），只寫 data/intraday.json。"""
-import json, ssl, sys, urllib.request, datetime, pathlib
+import json, re, ssl, sys, urllib.request, datetime, pathlib
 
 ROOT = pathlib.Path(__file__).parent
 DATA = ROOT / "data"
@@ -10,6 +10,9 @@ TWSE = "https://openapi.twse.com.tw/v1"
 TPEX = "https://www.tpex.org.tw/openapi/v1"
 URLS = {
     "twse_stocks": [f"{TWSE}/exchangeReport/STOCK_DAY_ALL"],
+    # 開放資料平台的上市行情晚一天才更新，改以證交所官網報表為主（當天傍晚就有），開放資料當備援
+    "twse_daily": ["https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?response=json&type=ALLBUT0999"],
+    "twse_daily_index": ["https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?response=json&type=IND"],
     "twse_index": [f"{TWSE}/exchangeReport/MI_INDEX"],
     "tpex_stocks": [f"{TPEX}/tpex_mainboard_daily_close_quotes", f"{TPEX}/tpex_mainboard_quotes"],
     "tpex_index": [f"{TPEX}/tpex_index", f"{TPEX}/tpex_reward_index"],
@@ -28,7 +31,11 @@ def get(urls, table=False):
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 tw-stock-tracker", "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
                 rows = json.loads(r.read().decode("utf-8-sig"))
-            if table:
+            if table == "tables":
+                if rows.get("stat") == "OK" and rows.get("tables"):
+                    print(f"[ok] {url} 日期 {rows.get('date')}")
+                    return rows, url
+            elif table:
                 if rows.get("data") and rows.get("fields"):
                     print(f"[ok] {url} 共 {len(rows['data'])} 筆；日期 {rows.get('date')}")
                     return rows, url
@@ -95,6 +102,50 @@ def parse_tpex_stocks(rows, codes):
             res[c] = stock_row(r, ["SecuritiesCompanyCode"], ["Close", "收盤"], ["Change", "漲跌"],
                                {"open": ["Open"], "high": ["High"], "low": ["Low"], "volume": ["TradingShares"], "value": ["TransactionAmount"]})
     return res
+
+def find_table(js, first_field):
+    for t in (js or {}).get("tables") or []:
+        f = [str(x).strip() for x in t.get("fields") or []]
+        if f and f[0] == first_field:
+            yield f, t.get("data") or []
+
+def signed(row, f, sign_col, pts_col):
+    """官網報表的漲跌符號是 HTML（例如 <p style=color:green>-</p>），去掉標籤後判斷正負。"""
+    pts = num(row[f.index(pts_col)]) if pts_col in f else None
+    if pts is not None and sign_col in f and "-" in re.sub(r"<[^>]*>", "", str(row[f.index(sign_col)])):
+        pts = -abs(pts)
+    return pts
+
+def parse_twse_daily(js, codes):
+    res, date = {}, roc_date((js or {}).get("date"))
+    for f, data in find_table(js, "證券代號"):
+        col = lambda r, n: num(r[f.index(n)]) if n in f else None
+        for r in data:
+            c = str(r[0]).strip()
+            if c in codes:
+                close, chg = col(r, "收盤價"), signed(r, f, "漲跌(+/-)", "漲跌價差")
+                pct = round(chg / (close - chg) * 100, 2) if close is not None and chg is not None and close - chg else None
+                res[c] = {"close": close, "change": chg, "pct": pct, "date": date, "open": col(r, "開盤價"), "high": col(r, "最高價"),
+                          "low": col(r, "最低價"), "volume": col(r, "成交股數"), "value": col(r, "成交金額")}
+    return res
+
+def parse_twse_daily_index(js):
+    for f, data in find_table(js, "指數"):
+        for r in data:
+            if str(r[0]).strip() == "發行量加權股價指數":
+                pts, pct = signed(r, f, "漲跌(+/-)", "漲跌點數"), num(r[f.index("漲跌百分比(%)")]) if "漲跌百分比(%)" in f else None
+                if pct is not None and pts is not None and pts < 0:
+                    pct = -abs(pct)
+                return {"close": num(r[f.index("收盤指數")]), "change": pts, "pct": pct, "date": roc_date(js.get("date"))}
+    return None
+
+def newer(a, b):
+    """兩份資料取日期較新的；一樣新時用 a。"""
+    if not b or b.get("close") is None:
+        return a
+    if not a or a.get("close") is None or (b.get("date") or "") > (a.get("date") or ""):
+        return b
+    return a
 
 def parse_twse_inst(tab, codes):
     """證交所三大法人買賣超日報：用欄位名稱找位置，避免欄位順序變動時取錯。"""
@@ -188,6 +239,8 @@ def intraday():
             continue  # 非交易日時官方會回傳上一個交易日的資料，不採用
         y = num(m.get("y"))
         z = num(m.get("z"))  # 最近成交價；當下那一盤沒有成交時是「-」
+        if z is None:
+            z = num((m.get("trade") or {}).get("z"))  # 官方另附的「最後一筆實際成交」
         grp = "indices" if k in ("TAIEX", "TPEX") else "stocks"
         if z is None:
             z = (prev.get(grp, {}).get(k) or {}).get("close")  # 沿用今天稍早抓到的成交價，不用委買委賣價推估
@@ -216,8 +269,12 @@ def main():
     stocks, indices, problems = {}, {}, []
 
     rows, _ = get(URLS["twse_stocks"]); stocks.update(parse_twse_stocks(rows, twse_codes))
+    js, _ = get(URLS["twse_daily"], table="tables")
+    for c, v in parse_twse_daily(js, twse_codes).items():
+        stocks[c] = newer(v, stocks.get(c))
     rows, _ = get(URLS["tpex_stocks"]); stocks.update(parse_tpex_stocks(rows, tpex_codes))
     rows, _ = get(URLS["twse_index"]); idx = parse_twse_index(rows)
+    js, _ = get(URLS["twse_daily_index"], table="tables"); idx = newer(parse_twse_daily_index(js), idx)
     if idx: indices["TAIEX"] = idx
     else: problems.append("抓不到加權指數")
     rows, _ = get(URLS["tpex_index"]); idx = parse_tpex_index(rows)
