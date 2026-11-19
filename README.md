@@ -8,10 +8,24 @@
 
 | 項目 | 來源 | 更新方式 |
 |---|---|---|
-| 加權指數、櫃買指數、個股開高低收、成交量與成交金額、三大法人買賣超 | 證交所、櫃買中心公開資料 | GitHub Actions 每個交易日 15:37、18:07、21:07（台北時間）自動執行 `fetch.py` |
-| 盤中即時報價（指數與個股） | 證交所基本市況報導網站 | GitHub Actions 每個交易日 10:02、11:02、12:02、13:02、13:32 執行 `fetch.py --intraday`，只寫 `data/intraday.json` |
+| 加權指數、櫃買指數、個股開高低收、成交量與成交金額、三大法人買賣超 | 證交所、櫃買中心公開資料 | 每個交易日 15:37、18:37、21:37（台北時間）執行 `fetch.py` |
+| 盤中即時報價（指數與個股） | 證交所基本市況報導網站 | 每個交易日 10:02、11:02、12:02、13:02、13:32 執行 `fetch.py --intraday`，只寫 `data/intraday.json` |
 | 法說會日期、產品比重 | 財經媒體的法說會整理，附來源連結 | Claude 排程任務每週六 08:43 檢查並更新 `fundamentals.json` |
 | 供應鏈位置、關注清單 | 人工設定 | 修改 `watchlist.json` |
+
+## 準時觸發（cron-job.org）
+
+GitHub 內建排程實測會延遲 8～9 小時，所以改由 [cron-job.org](https://cron-job.org) 準時呼叫 GitHub 執行；GitHub 內建排程保留作備援（重複執行無害）。
+
+| 工作 | 時間（Asia/Taipei，週一～五） | 呼叫的排程檔 |
+|---|---|---|
+| 盤中更新 | 10:02、11:02、12:02、13:02 | `intraday.yml` |
+| 收盤即時價 | 13:32 | `intraday.yml` |
+| 盤後資料 | 15:37、18:37、21:37 | `daily.yml` |
+
+每個工作都是 `POST https://api.github.com/repos/021404anderson-commits/tw-stock-tracker/actions/workflows/<排程檔>/dispatches`，
+內容 `{"ref":"main"}`，標頭帶 `Authorization: Bearer <GitHub 金鑰>`。金鑰只開這個儲存庫的 Actions 讀寫權限；到期後要重新產生並更新到 cron-job.org。
+國定假日照樣會觸發，但程式會判斷今天沒有交易資料而不更新。
 
 ## 族群強弱排名
 

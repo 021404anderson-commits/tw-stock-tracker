@@ -1,6 +1,7 @@
 name: 盤中更新
 
 on:
+  # 主要由 cron-job.org 準時觸發（見 README）；GitHub 內建排程常延遲數小時，留作備援
   schedule:
     - cron: "2 2 * * 1-5"    # 台北時間 10:02
     - cron: "2 3 * * 1-5"    # 台北時間 11:02
